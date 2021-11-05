@@ -16,7 +16,7 @@ from sidd.data_loader import check_download_sidd
 from sidd.pipeline import process_sidd_image
 from sidd.raw_utils import read_metadata
 from sidd.sidd_utils import unpack_raw, kl_div_3_data
-from pytorch_model.noise_flow import generate_noise_flow
+from pytorch_model.noise_flow import generate_noise_flow, generate_noisy_image_flow
 from pytorch_model.converate_parameters import converate_w
 
 data_dir = 'data'
@@ -46,15 +46,21 @@ def main():
     patch_size = 32
     save_model = False
     load_model = True
+    noisey_image_flow = True
     # Prepare NoiseFlow
     # Issue: Low-probability sampling leading to synthesized pixels with too-high noise variance.
     # Solution: Contracting the sampling distribution by using sampling temperature less than 1.0 (e.g., 0.6).
     # Reference: Parmar, Niki, et al. "Image Transformer." ICML. 2018.
     noise_flow = NoiseFlowWrapper(nf_model_path, sampling_temperature=0.6)
-    noise_flow_pytorch = generate_noise_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]])
+    if noisey_image_flow:
+        file_name = "noisy_image_flow"
+        noise_flow_pytorch = generate_noisy_image_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]])
+    else:
+        file_name = "noise_flow"
+        noise_flow_pytorch = generate_noise_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]])
     if load_model:
         noise_flow_pytorch.load_state_dict(
-            torch.load(f"/Users/haihabi/projects/noise_flow/models/PyTorch/noise_flow.pt",
+            torch.load(f"/Users/haihabi/projects/noise_flow/models/PyTorch/{file_name}.pt",
                        map_location=torch.device('cpu')))
     else:
         import tensorflow as tf
@@ -94,35 +100,19 @@ def main():
             ##########################
             # Sample Pytorch Mod
             ##########################
-            clean_image_patch_pytorch = torch.Tensor(clean_patch)
+            clean_image_patch_pytorch = torch.permute(torch.Tensor(clean_patch), dims=(0, 3, 1, 2))
             z_pytorch = torch.tensor(np.transpose(z, (0, 3, 1, 2)))
             noise_flow_pytorch.train()
-            noise_patch_pytorch, logdet_pytorch = noise_flow_pytorch.backward(z_pytorch.reshape([1, -1]), cond=[
-                torch.permute(clean_image_patch_pytorch, dims=(0, 3, 1, 2)), iso, cam])
-
-            _ = compare_tensors(noise_patch_pytorch[1], z)
-            _ = compare_tensors(noise_patch_pytorch[1], x_list[0])
-            _ = compare_tensors(noise_patch_pytorch[2], x_list[1])
-            _ = compare_tensors(noise_patch_pytorch[3], x_list[2])
-            _ = compare_tensors(noise_patch_pytorch[4], x_list[3])
-            _ = compare_tensors(noise_patch_pytorch[5], x_list[4])
-            _ = compare_tensors(noise_patch_pytorch[6], x_list[5])
-            _ = compare_tensors(noise_patch_pytorch[7], x_list[6])
-            _ = compare_tensors(noise_patch_pytorch[8], x_list[7])
-            _ = compare_tensors(noise_patch_pytorch[9], x_list[8])
-            _ = compare_tensors(noise_patch_pytorch[10], x_list[9])
-            _ = compare_tensors(noise_patch_pytorch[11], x_list[10])
-            _ = compare_tensors(noise_patch_pytorch[12], x_list[11])
-            _ = compare_tensors(noise_patch_pytorch[13], x_list[12])
-            _ = compare_tensors(noise_patch_pytorch[14], x_list[13])
-            _ = compare_tensors(noise_patch_pytorch[15], x_list[14])
-            _ = compare_tensors(noise_patch_pytorch[16], x_list[15])
-            _ = compare_tensors(noise_patch_pytorch[17], x_list[16])
-            _ = compare_tensors(noise_patch_pytorch[18], x_list[17])
-            _ = compare_tensors(noise_patch_pytorch[19], noise_patch_syn)
+            noise_patch_pytorch, logdet_pytorch = noise_flow_pytorch.backward(z_pytorch.reshape([1, -1]),
+                                                                              cond=[clean_image_patch_pytorch, iso,
+                                                                                    cam])
+            if noisey_image_flow:
+                _ = compare_tensors(noise_patch_pytorch[-1] - clean_image_patch_pytorch, noise_patch_syn)
+            else:
+                _ = compare_tensors(noise_patch_pytorch[-1], noise_patch_syn)
             if save_model:
                 torch.save(noise_flow_pytorch.state_dict(),
-                           os.path.join("/Users/haihabi/projects/noise_flow/models/PyTorch", "noise_flow.pt"))
+                           os.path.join("/Users/haihabi/projects/noise_flow/models/PyTorch", f"{file_name}.pt"))
 
 
 if __name__ == '__main__':

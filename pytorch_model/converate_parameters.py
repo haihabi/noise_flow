@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from pytorch_model.noise_flow import generate_noisy_image_flow, generate_noise_flow
 
 
 def set_param_weigth(pytorch_param, numpy_param):
@@ -108,16 +109,18 @@ def _unc_layer_parameters_setter(flow_step_conv, flow_step_affine, tf_parameters
     set_param_weigth(flow_step_affine.s_cond.seq[8].logs, logs)
 
 
-def converate_w(noise_flow, tf_parameters):
-    _sdn_layer_parameters_setter(noise_flow.flow.flows[0], tf_parameters)
+def converate_w(noise_flow, tf_parameters, shift=0):
+    shift = int(len(noise_flow.flow.flows) == 20)
+    _sdn_layer_parameters_setter(noise_flow.flow.flows[shift], tf_parameters)
     for i in range(4):
-        _unc_layer_parameters_setter(noise_flow.flow.flows[1 + 2 * i], noise_flow.flow.flows[2 + 2 * i],
+        _unc_layer_parameters_setter(noise_flow.flow.flows[1 + shift + 2 * i], noise_flow.flow.flows[2 + shift + 2 * i],
                                      tf_parameters,
                                      i + 1, 7 - i)
 
-    _gain_parameters_setter(noise_flow.flow.flows[9], tf_parameters)
+    _gain_parameters_setter(noise_flow.flow.flows[9 + shift], tf_parameters)
     for i in range(4):
-        _unc_layer_parameters_setter(noise_flow.flow.flows[10 + 2 * i], noise_flow.flow.flows[11 + 2 * i],
+        _unc_layer_parameters_setter(noise_flow.flow.flows[10 + shift + 2 * i],
+                                     noise_flow.flow.flows[11 + shift + 2 * i],
                                      tf_parameters,
                                      i + 6, 3 - i)
 
