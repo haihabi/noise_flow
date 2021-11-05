@@ -1,5 +1,16 @@
 Noise Flow - A normalizing flows model for image noise modeling and synthesis
 ===
+This is a fork of the NoiseFlow Original GitHub repository.
+https://github.com/BorealisAI/noise_flow 
+
+This repo includes the following: 
+1. A PyTorch implementation of NoiseFlow
+2. Parameter porting code (From Tensorflow to PyTorch)
+
+The PyTorch Implementation is based on the repository that
+will be released soon :)
+
+# Original Readme
 
 This repository provides the codes for training and testing the Noise Flow model used for image noise modeling and 
 synthesis as described in the paper:

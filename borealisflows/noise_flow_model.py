@@ -429,10 +429,13 @@ class NoiseFlow(object):
 
     def forward(self, z, eps_std, yy=None, nlf0=None, nlf1=None, iso=None, cam=None):
         x = z
+        x_list = []
+
         for i in reversed(range(self.n_levels)):
             if i < self.n_levels - 1:
                 x = split2d_reverse("pool{}".format(i), x, eps_std)
             for bijector in reversed(self.model[i]):
+                x_list.append(x)
                 if type(bijector) in [AffineCouplingCondY, AffineCouplingCondXY, AffineCouplingFitSdnGain2,
                                       AffineCouplingCondYG, AffineCouplingCamSdn, AffineCouplingCondXYG,
                                       AffineCouplingSdnGain, AffineCouplingSdn, AffineCouplingGain,
@@ -443,8 +446,10 @@ class NoiseFlow(object):
                     x = bijector._forward(x, yy, nlf0, nlf1, iso, cam)
                 else:
                     x = bijector._forward(x)
+                print(type(bijector),bijector.name)
+
             x = unsqueeze2d(x, self.hps.squeeze_factor, self.hps.squeeze_type)
-        return x
+        return x, x_list
 
     def sample(self, y, eps_std=None, yy=None, nlf0=None, nlf1=None, iso=None, cam=None):
         """Sampling function"""
@@ -452,8 +457,8 @@ class NoiseFlow(object):
         with tf.variable_scope('model', reuse=True):
             _, sample = self.prior("prior", y)
             z = sample(eps_std)
-            x = self.forward(z, eps_std, yy, nlf0, nlf1, iso, cam)
-        return x
+            x, x_list = self.forward(z, eps_std, yy, nlf0, nlf1, iso, cam)
+        return x, z, x_list
 
     def _loss(self, x, y, nlf0=None, nlf1=None, iso=None, cam=None, reuse=False):
         with tf.variable_scope('model', reuse=reuse):

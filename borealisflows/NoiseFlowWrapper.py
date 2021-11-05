@@ -33,6 +33,7 @@ class NoiseFlowWrapper:
         self.iso = None
         self.cam = None
         self.is_training = None
+        self.z_sample = None
         self.x_sample = None
 
         self.is_cond = True
@@ -61,7 +62,7 @@ class NoiseFlowWrapper:
         self.nf_model = NoiseFlow(self.x_shape[1:], self.is_training, self.hps)
 
         self.logger.info('Creating sampling operation')
-        self.x_sample = self.sample_sidd_tf()
+        self.x_sample, self.z_sample, self.x_list_sample = self.sample_sidd_tf()
 
         self.logger.info('Creating saver')
         self.saver = tf.train.Saver()
@@ -82,16 +83,19 @@ class NoiseFlowWrapper:
         noise = None
         # sig = np.sqrt(b1 * batch_x + b2)  # in [0, 1]
         # noise = np.random.normal(0.0, sig, batch_x.shape)
-        noise = self.sess.run(self.x_sample, feed_dict={self.y: batch_x, self.nlf0: [b1], self.nlf1: [b2],
-                                                        self.iso: [iso], self.cam: [cam], self.is_training: True})
-        return noise
+        noise, z, x_list = self.sess.run(
+            [self.x_sample, self.z_sample, self.x_list_sample],
+            feed_dict={self.y: batch_x, self.nlf0: [b1], self.nlf1: [b2],
+                       self.iso: [iso], self.cam: [cam], self.is_training: True})
+        return noise, z, x_list
 
     def sample_sidd_tf(self):
         if self.is_cond:
-            x_sample = self.nf_model.sample(self.y, self.temp, self.y, self.nlf0, self.nlf1, self.iso, self.cam)
+            x_sample, z, x_list = self.nf_model.sample(self.y, self.temp, self.y, self.nlf0, self.nlf1, self.iso,
+                                                       self.cam)
         else:
-            x_sample = self.nf_model.sample(self.y, self.temp)
-        return x_sample
+            x_sample, z, x_list = self.nf_model.sample(self.y, self.temp)
+        return x_sample, z, x_list
 
     def hps_loader(self, path):
         import csv
@@ -117,10 +121,10 @@ class NoiseFlowWrapper:
                         elif val == 'False':
                             val = False
                         # elif pair[0] == 'param_inits':
-                            # import pdb
-                            # pdb.set_trace()
-                            # val = val.replace('\n', '')  # .replace('\r', '')
-                            # val = ast.literal_eval(val)
+                        # import pdb
+                        # pdb.set_trace()
+                        # val = val.replace('\n', '')  # .replace('\r', '')
+                        # val = ast.literal_eval(val)
                 hps.__setattr__(pair[0], val)
         if hps.arch.__contains__('sdn5'):
             npcam = 3
