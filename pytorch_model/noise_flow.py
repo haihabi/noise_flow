@@ -54,5 +54,5 @@ def generate_noisy_image_flow(input_shape, device="cpu", load_model=False):
         state_dict = torch.load(
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "PyTorch", "noisy_image_flow.pt"),
             map_location=torch.device('cpu'))
-        flow.load_state_dict(state_dict)
+        flow.load_state_dict(state_dict,strict=False)
     return flow
