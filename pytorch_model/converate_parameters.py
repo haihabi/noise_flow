@@ -79,7 +79,7 @@ def _unc_layer_parameters_setter(flow_step_conv, flow_step_affine, tf_parameters
     set_param_weigth(flow_step_conv.U, u)
 
     rescaling_scale = tf_parameters.pop(f'level0/bijector{index}/rescaling_scale0')
-    set_param_weigth(flow_step_affine.scale, rescaling_scale)
+    set_param_weigth(flow_step_affine.s_cond.scale, rescaling_scale)
 
     base_name = "model/real_nvp_conv_template"
     if unc_count > 0:

@@ -10,7 +10,7 @@ from torch.distributions import MultivariateNormal
 
 def unc_step(input_shape, n_channels, index):
     return [nfp.flows.InvertibleConv2d1x1(n_channels),
-            nfp.flows.AffineCouplingFlow2d(input_shape, 0)]
+            nfp.flows.AffineCoupling(input_shape, 0)]
 
 
 def generate_noise_flow(input_shape, device="cpu"):

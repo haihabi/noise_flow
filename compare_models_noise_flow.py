@@ -44,8 +44,8 @@ def main():
     logging.getLogger(__name__).setLevel("TRACE")
     logging.basicConfig(level=logging.TRACE)
     patch_size = 32
-    save_model = False
-    load_model = True
+    save_model = True
+    load_model = False
     noisey_image_flow = True
     # Prepare NoiseFlow
     # Issue: Low-probability sampling leading to synthesized pixels with too-high noise variance.
