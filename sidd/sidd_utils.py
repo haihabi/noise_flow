@@ -884,6 +884,7 @@ def bpd(nll, n_bins, n_dims):
 def sidd_filenames_que_inst(sidd_path, train_or_test='train', first_im_idx=0, last_im_idx=1, cam=None, iso=None):
     """Returns filenames: list of tuples: (input noisy, ground truth, per-pixel variance, metadata), all .MAT
     """
+    print(sidd_path)
     if train_or_test == 'train':
         inst_idxs = [4, 11, 13, 17, 18, 20, 22, 23, 25, 27, 28, 29, 30, 34, 35, 39, 40, 42, 43, 44, 45, 47, 81, 86, 88,
                      90, 101, 102, 104, 105, 110, 111, 115, 116, 125, 126, 127, 129, 132, 135,
@@ -926,6 +927,7 @@ def sidd_filenames_que_inst(sidd_path, train_or_test='train', first_im_idx=0, la
             fns.put(a_tuple)
         idxs.append(id)
         cnt_inst += 1
+    print(cnt_inst)
     return fns, cnt_inst
 
 
@@ -1164,9 +1166,9 @@ def restore_last_model(ckpt_dir, sess, saver):
 
 def sample_sidd_tf(sess, flow_model, is_training, temp, y, nlf0, nlf1, iso, cam, is_cond):
     if is_cond:
-        x_sample = flow_model.sample(y, temp, y, nlf0, nlf1, iso, cam)
+        x_sample = flow_model.sample(y, temp, y, nlf0, nlf1, iso, cam)[0] # Only select output zero
     else:
-        x_sample = flow_model.sample(y, temp)
+        x_sample = flow_model.sample(y, temp)[0]
     return x_sample
 
 

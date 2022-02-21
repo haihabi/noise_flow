@@ -21,7 +21,7 @@ class SignalDependentLayer(nfp.ConditionalBaseFlowLayer):
     def _build_scale(self, clean_image, iso, cam):
         one_cam_params = self.cam_param[:, cam]
         one_cam_params = torch.exp(one_cam_params)
-        gain_index = ISO2INDEX[iso]
+        gain_index = ISO2INDEX[iso.item()]
         g = self.gain_params[gain_index]
         gain = torch.exp(g * one_cam_params[2]) * iso
         beta1 = torch.exp(self.beta1 * one_cam_params[0])

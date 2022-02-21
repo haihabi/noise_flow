@@ -18,7 +18,7 @@ from sidd.sidd_utils import pack_raw, get_nlf, load_one_tuple_images, sample_ind
 
 class PatchSampler:
 
-    def __init__(self, im_tuple_queue, patch_height=256, sampling='uniform', max_queue_size=256, n_threads=4,
+    def __init__(self, im_tuple_queue, patch_height=256, sampling='uniform', max_queue_size=32, n_threads=1,
                  n_reuse_image=0, n_pat_per_im=1, shuffle=True):
         # queue to pull image dictionaries from
         self.im_tuple_queue = im_tuple_queue

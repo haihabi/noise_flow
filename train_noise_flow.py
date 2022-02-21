@@ -23,6 +23,7 @@ from sidd.data_loader import check_download_sidd
 from sidd.sidd_utils import sidd_filenames_que_inst, restore_last_model, \
     divide_parts, calc_train_test_stats, print_train_test_stats, sample_sidd_tf, \
     calc_kldiv_mb, kl_div_3_data
+from tqdm import tqdm
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -33,25 +34,29 @@ def train_multithread(sess, tr_batch_que,
                       _lr, n_processed_que, train_epoch_loss_que, sd_z_que,
                       train_its, nthr=8, requeue=False):
     divs = divide_parts(train_its, nthr)
-    threads = []
-    for thr_id in range(nthr):
-        threads.append(Thread(target=train_thread,
-                              args=(thr_id, divs[thr_id], sess, tr_batch_que,
-                                    loss, sd_z, train_op,
-                                    x, y, nlf0, nlf1, iso, cam, lr, is_training,
-                                    _lr, n_processed_que, train_epoch_loss_que, sd_z_que, requeue)
-                              )
-                       )
-        threads[thr_id].start()
-    for thr_id in range(nthr):
-        threads[thr_id].join()
+    train_thread(0, divs[0], sess, tr_batch_que,
+                 loss, sd_z, train_op,
+                 x, y, nlf0, nlf1, iso, cam, lr, is_training,
+                 _lr, n_processed_que, train_epoch_loss_que, sd_z_que, requeue)
+    # threads = []
+    # for thr_id in range(nthr):
+    #     threads.append(Thread(target=train_thread,
+    #                           args=(thr_id, divs[thr_id], sess, tr_batch_que,
+    #                                 loss, sd_z, train_op,
+    #                                 x, y, nlf0, nlf1, iso, cam, lr, is_training,
+    #                                 _lr, n_processed_que, train_epoch_loss_que, sd_z_que, requeue)
+    #                           )
+    #                    )
+    #     threads[thr_id].start()
+    # for thr_id in range(nthr):
+    #     threads[thr_id].join()
 
 
 def train_thread(thr_id, niter, sess, tr_batch_que,
                  loss, sd_z, train_op,
                  x, y, nlf0, nlf1, iso, cam, lr, is_training,
                  _lr, n_processed_que, train_epoch_loss_que, sd_z_que, requeue=False):
-    for k in range(niter):
+    for k in tqdm(range(niter)):
         tr_mb_dict = tr_batch_que.get()  # blocking
         _x = tr_mb_dict['_x']
         _y = tr_mb_dict['_y']
@@ -83,24 +88,27 @@ def test_multithread(sess, ts_batch_que,
                      test_epoch_loss_que, sd_z_que,
                      test_its, nthr=8, requeue=False):
     divs = divide_parts(test_its, nthr)
-    threads = []
-    for thr_id in range(nthr):
-        threads.append(Thread(target=test_thread,
-                              args=(thr_id, divs[thr_id], sess, ts_batch_que,
-                                    loss, sd_z, x, y, nlf0, nlf1, iso, cam, is_training,
-                                    test_epoch_loss_que, sd_z_que, requeue)
-                              )
-                       )
-        threads[thr_id].start()
-    for thr_id in range(nthr):
-        threads[thr_id].join()
+    test_thread(0, divs[0], sess, ts_batch_que,
+                loss, sd_z, x, y, nlf0, nlf1, iso, cam, is_training,
+                test_epoch_loss_que, sd_z_que, requeue)
+    # threads = []
+    # for thr_id in range(nthr):
+    #     threads.append(Thread(target=test_thread,
+    #                           args=(thr_id, divs[thr_id], sess, ts_batch_que,
+    #                                 loss, sd_z, x, y, nlf0, nlf1, iso, cam, is_training,
+    #                                 test_epoch_loss_que, sd_z_que, requeue)
+    #                           )
+    #                    )
+    #     threads[thr_id].start()
+    # for thr_id in range(nthr):
+    #     threads[thr_id].join()
 
 
 def test_thread(thr_id, niter, sess, ts_batch_que,
                 loss, sd_z, x, y, nlf0, nlf1, iso, cam, is_training,
                 test_epoch_loss_que, sd_z_que,
                 requeue=False):
-    for k in range(niter):
+    for k in tqdm(range(niter)):
         ts_mb_dict = ts_batch_que.get()  # blocking
         _x = ts_mb_dict['_x']
         _y = ts_mb_dict['_y']
@@ -168,7 +176,7 @@ def sample_thread(thr_id, niter, sess, ts_batch_que,
                                                      iso: _iso, cam: _cam, is_training: False})
 
         # (optional) compute KL divergence between _x and x_sample_val
-        kldiv3 = kl_div_3_data(_x, x_sample_val)  # slow
+        # kldiv3 = kl_div_3_data(_x, x_sample_val)  # slow
 
         # compute NLL (inverse)
         sample_loss, sd_z_val = sess.run([loss, sd_z], feed_dict={x: x_sample_val, y: _y, nlf0: _nlf0, nlf1: _nlf1,
@@ -215,9 +223,8 @@ def init_params(hps1):
 
 
 def main(hps):
-
     # Download SIDD_Medium_Raw?
-    check_download_sidd()
+    # check_download_sidd()
 
     total_time = time.time()
     host = socket.gethostname()
@@ -264,7 +271,8 @@ def main(hps):
     # calculate data stats and baselines
     logging.trace('calculating data stats and baselines...')
     hps.calc_pat_stats_and_baselines_only = True
-    pat_stats, nll_gauss, _, nll_sdn, _, tr_batch_sampler, ts_batch_sampler = initialize_data_stats_queues_baselines_histograms(hps, logdir)
+    pat_stats, nll_gauss, _, nll_sdn, _, tr_batch_sampler, ts_batch_sampler = initialize_data_stats_queues_baselines_histograms(
+        hps, logdir)
     hps.nll_gauss = nll_gauss
     hps.nll_sdn = nll_sdn
 
@@ -273,7 +281,8 @@ def main(hps):
     logging.trace('preparing data queues...')
     hps.calc_pat_stats_and_baselines_only = False
     tr_im_que, ts_im_que, tr_pat_que, ts_pat_que, tr_batch_que, ts_batch_que = \
-        initialize_data_stats_queues_baselines_histograms(hps, logdir, tr_batch_sampler=tr_batch_sampler, ts_batch_sampler=ts_batch_sampler)
+        initialize_data_stats_queues_baselines_histograms(hps, logdir, tr_batch_sampler=tr_batch_sampler,
+                                                          ts_batch_sampler=ts_batch_sampler)
     # hps.save_batches = True
 
     print_train_test_stats(hps)
@@ -396,7 +405,7 @@ def main(hps):
 
             test_multithread(sess, ts_batch_que, loss_val, sd_z, x, y, nlf0, nlf1, iso, cam, is_training,
                              test_epoch_loss_que, sd_z_que_ts, test_its, nthr=hps.n_train_threads,
-                             requeue=not hps.mb_requeue)
+                             requeue=False)
 
             assert test_epoch_loss_que.qsize() == test_its
             for tt in range(test_its):
@@ -424,11 +433,11 @@ def main(hps):
             test_logger.log(log_dict)
 
             t_test = time.time() - t
-
+        print("End Testing Loop")
         # End testing if & loop
 
         # Sampling (optional)
-        do_sampling = True  # make this true to perform sampling
+        do_sampling = False  # make this true to perform sampling
         if do_sampling and ((epoch < 10 or (epoch < 100 and epoch % 10 == 0) or  # (is_best == 1) or
                              epoch % hps.epochs_full_valid * 2 == 0.)):
             for temp in [1.0]:  # using only default temperature
@@ -545,6 +554,6 @@ if __name__ == "__main__":
     import signal
 
     # This enables a ctr-C without triggering errors
-    signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+    # signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
     hps = arg_parser()
     main(hps)

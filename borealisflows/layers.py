@@ -446,6 +446,7 @@ def real_nvp_default_template(
             # shift = x[:, :, :, 0::2]
             # log_scale = x[:, :, :, 1::2]
             return shift, log_scale
+
         return tf.make_template(template_name, _fn)
 
 
@@ -455,6 +456,7 @@ def real_nvp_conv_template(
         width=512,
         shift_only=False,
         activation=tf.nn.relu,
+        edge_bias=True,
         name=None,
         *args,
         **kwargs):
@@ -488,13 +490,14 @@ def real_nvp_conv_template(
                         x, False, name='bn_nvp_conv_2'))
             x = activation(x)
 
-            x = conv2d_zeros('l_last', x, num_output)
+            x = conv2d_zeros('l_last', x, num_output, edge_bias=edge_bias)
             if shift_only:
                 return x, None
             shift, log_scale = tf.split(x, 2, axis=-1)
             # shift = x[:, :, :, 0::2]
             # log_scale = x[:, :, :, 1::2]
             return shift, log_scale
+
         return tf.make_template(template_name, _fn)
 
 
@@ -544,6 +547,7 @@ def real_nvp_conv_template_iso(
             # shift = x[:, :, :, 0::2]
             # log_scale = x[:, :, :, 1::2]
             return shift, log_scale
+
         return tf.make_template(template_name, _fn)
 
 

@@ -27,7 +27,7 @@ batch_size = 128
 sidd_medium_raw_url = 'ftp://sidd_user:sidd_2018@130.63.97.225/SIDD_Medium_Raw.zip'
 sidd_medium_raw_name = 'SIDD_Medium_Raw.zip'
 ftp_ip, ftp_user, ftp_pass = '130.63.97.225', 'sidd_user', 'sidd_2018'
-data_dir = './data'
+data_dir = '/data/projects'
 sidd_path = os.path.join(data_dir, 'SIDD_Medium_Raw/Data')
 
 

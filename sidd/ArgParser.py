@@ -42,8 +42,9 @@ def arg_parser():
                         help="Use full convolutions (vs sandwich)")
     parser.add_argument("--width", type=int, default=512,
                         help="Width of hidden layers")
-    parser.add_argument("--depth", type=int, default=8,
-                        help="Depth of network")
+    parser.add_argument("--depth", type=int, default=8, help="Depth of network")
+    parser.add_argument("--non-linear", type=str, default="relu", help="Non Linear function use in noise flow")
+    parser.add_argument("--edge_bias", action="store_true", default=False)
     parser.add_argument("--weight_y", type=float, default=0.00,
                         help="Weight of log p(y|x) in weighted loss")
     parser.add_argument("--n_bits_x", type=int, default=10,

@@ -22,10 +22,10 @@ def initialize_data_stats_queues_baselines_histograms(hps, logdir, tr_batch_samp
     n_thr_psc = 4
 
     im_qsz = 4
-    pat_qsz = 300
-    mb_qsz_tr = hps.train_its + 1
+    pat_qsz = 32
+    mb_qsz_tr = 600 + 1
     mb_qsz_ts = hps.test_its + 1
-
+    print(mb_qsz_tr,mb_qsz_ts)
     requeue = True  # True: keep re-adding the same data to the queues for future epochs
 
     tr_fns, hps.n_tr_inst = sidd_filenames_que_inst(hps.sidd_path, 'train', hps.start_tr_im_idx, hps.end_tr_im_idx,
@@ -78,7 +78,7 @@ def initialize_data_stats_queues_baselines_histograms(hps, logdir, tr_batch_samp
         return tr_im_que, ts_im_que, tr_pat_que, ts_pat_que, tr_batch_que, ts_batch_que
 
 
-def get_image_ques(hps, requeue, n_thr_im, im_qsz=16):
+def get_image_ques(hps, requeue, n_thr_im, im_qsz=4):
     tr_fns, hps.n_tr_inst = sidd_filenames_que_inst(hps.sidd_path, 'train', hps.start_tr_im_idx, hps.end_tr_im_idx,
                                                     hps.camera, hps.iso)
     ts_fns, hps.n_ts_inst = sidd_filenames_que_inst(hps.sidd_path, 'test', hps.start_ts_im_idx, hps.end_ts_im_idx,

@@ -41,6 +41,19 @@ tfd = tfp.distributions
 tfb = tfp.bijectors
 
 
+def silu(x):
+    return tf.nn.sigmoid(x) * x
+
+
+def get_activation(hps):
+    if hps.non_linear == "relu":
+        return tf.nn.relu
+    elif hps.non_linear == "silu":
+        return silu
+    else:
+        raise Exception()
+
+
 class NoiseFlow(object):
 
     def __init__(self, x_shape, is_training, hps=None):
@@ -71,6 +84,8 @@ class NoiseFlow(object):
     def noise_flow_arch(self, name, x_shape, flow_permutation, arch):
         arch_lyrs = arch.split('|')  # e.g., unc|sdn|unc|gain|unc
         bijectors = []
+        edge_bias = self.hps.edge_bias
+        activation_function = get_activation(self.hps)
         with tf.variable_scope(name):
             for i, lyr in enumerate(arch_lyrs):
                 with tf.variable_scope('bijector{}'.format(i)):
@@ -101,7 +116,7 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template(
                                     x_shape=x_shape,
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width, activation=activation_function, edge_bias=edge_bias)))
 
                     elif lyr == 'sdn':
                         print('|-AffineCouplingSdn')
@@ -238,6 +253,8 @@ class NoiseFlow(object):
         """Affine coupling"""
         print('sidd_cond = %s' % self.hps.sidd_cond)
         bijectors = []
+        activation_function = get_activation(self.hps)
+
         with tf.variable_scope(name):
             # append an SDN layer (2nd degree) next to base measure
             if self.hps.append_sdn2:
@@ -275,7 +292,8 @@ class NoiseFlow(object):
                             shift_and_log_scale_fn=real_nvp_conv_template(
                                 x_shape=x_shape[:-1] + [x_shape[-1] * 2],  # double outputs
                                 is_training=self._is_training,
-                                width=self.hps.width)
+                                width=self.hps.width,
+                                activation=activation_function)
                         )
                     )
             for i in range(self.depth):
@@ -312,7 +330,8 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template(
                                     x_shape=x_shape[:-1] + [x_shape[-1] * 2],  # double outputs
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width,
+                                    activation=activation_function)))
                     elif self.hps.sidd_cond == 'condYG':
                         print('|-AffineCouplingCondYG')
                         bijectors.append(
@@ -323,7 +342,7 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template_iso(
                                     x_shape=x_shape[:-1] + [x_shape[-1] * 2],  # double outputs
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width, activation=activation_function)))
                     elif self.hps.sidd_cond == 'condXY':
                         print('|-AffineCouplingCondXY')
                         bijectors.append(
@@ -334,7 +353,7 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template(
                                     x_shape=x_shape,
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width, activation=activation_function)))
                     elif self.hps.sidd_cond == 'condXYG':
                         print('|-AffineCouplingCondXYG')
                         bijectors.append(
@@ -345,7 +364,7 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template_iso(
                                     x_shape=x_shape,
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width, activation=activation_function)))
                     elif self.hps.sidd_cond == 'condSDN':
                         print('|-AffineCouplingSDN')
                         bijectors.append(
@@ -356,7 +375,7 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template(
                                     x_shape=x_shape[:-1] + [x_shape[-1] * 2],  # double outputs
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width, activation=activation_function)))
                     elif self.hps.sidd_cond == 'fitSDN':
                         print('|-AffineCouplingFitSDN')
                         bijectors.append(
@@ -375,7 +394,7 @@ class NoiseFlow(object):
                                 shift_and_log_scale_fn=real_nvp_conv_template(
                                     x_shape=x_shape,
                                     is_training=self._is_training,
-                                    width=self.hps.width)))
+                                    width=self.hps.width, activation=activation_function)))
             # append an SDN layer next to data
             if self.hps.append_sdn:
                 with tf.variable_scope('bijector{}'.format(self.depth)):
@@ -446,7 +465,7 @@ class NoiseFlow(object):
                     x = bijector._forward(x, yy, nlf0, nlf1, iso, cam)
                 else:
                     x = bijector._forward(x)
-                print(type(bijector),bijector.name)
+                print(type(bijector), bijector.name)
 
             x = unsqueeze2d(x, self.hps.squeeze_factor, self.hps.squeeze_type)
         return x, x_list
