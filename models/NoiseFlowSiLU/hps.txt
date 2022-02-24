@@ -104,7 +104,6 @@ n_ts_bat_per_seq,462
 logdirname,noise_flow_model_silu
 train_its,2352
 test_its,924
-x_shape,"[None, 32, 32, 4]"
 n_dims,4096
 nll_gauss,-11745.559471016466
 nll_sdn,-13441.856566383829

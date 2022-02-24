@@ -124,3 +124,5 @@ optim,adam
 arch,sdn5|unc|unc|unc|unc|gain4|unc|unc|unc|unc
 sample_subdir,
 epochs_warmup,10
+edge_bias,True
+non_linear,relu
