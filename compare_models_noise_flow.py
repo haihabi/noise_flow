@@ -53,6 +53,7 @@ def main():
     # Reference: Parmar, Niki, et al. "Image Transformer." ICML. 2018.
     noise_flow = NoiseFlowWrapper(nf_model_path, sampling_temperature=0.6)
     edge_bias = noise_flow.hps.edge_bias
+    # edge_bias = True
     nl = noise_flow.hps.non_linear
     if noisey_image_flow:
         file_name = "noisy_image_flow"
