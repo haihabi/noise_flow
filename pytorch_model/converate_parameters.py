@@ -79,7 +79,7 @@ def _unc_layer_parameters_setter(flow_step_conv, flow_step_affine, tf_parameters
     set_param_weigth(flow_step_conv.U, u)
 
     rescaling_scale = tf_parameters.pop(f'level0/bijector{index}/rescaling_scale0')
-    set_param_weigth(flow_step_affine.s_cond.scale, rescaling_scale)
+    set_param_weigth(flow_step_affine.s_cond.net_class.scale, rescaling_scale)
 
     base_name = "model/real_nvp_conv_template"
     if unc_count > 0:
@@ -88,25 +88,25 @@ def _unc_layer_parameters_setter(flow_step_conv, flow_step_affine, tf_parameters
     w1 = tf_parameters.pop(f"{base_name}/l_1/W")
     b1 = tf_parameters.pop(f"{base_name}/l_1/b")
 
-    set_parameters_conv(flow_step_affine.s_cond.seq[0], w1, b1)
+    set_parameters_conv(flow_step_affine.s_cond.net_class.seq[0], w1, b1)
     w1 = tf_parameters.pop(f"{base_name}/l_2/W")
     b1 = tf_parameters.pop(f"{base_name}/l_2/b")
-    set_parameters_conv(flow_step_affine.s_cond.seq[3], w1, b1)
+    set_parameters_conv(flow_step_affine.s_cond.net_class.seq[3], w1, b1)
 
     w1 = tf_parameters.pop(f"{base_name}/l_last/W")
     b1 = tf_parameters.pop(f"{base_name}/l_last/b")
-    set_parameters_conv(flow_step_affine.s_cond.seq[7], w1, b1)
+    set_parameters_conv(flow_step_affine.s_cond.net_class.seq[7], w1, b1)
 
     mean = tf_parameters.pop(f"{base_name}/bn_nvp_conv_1/mean")
     var = tf_parameters.pop(f"{base_name}/bn_nvp_conv_1/var")
-    set_parameters_bn(flow_step_affine.s_cond.seq[1], mean, var)
+    set_parameters_bn(flow_step_affine.s_cond.net_class.seq[1], mean, var)
 
     mean = tf_parameters.pop(f"{base_name}/bn_nvp_conv_2/mean")
     var = tf_parameters.pop(f"{base_name}/bn_nvp_conv_2/var")
-    set_parameters_bn(flow_step_affine.s_cond.seq[4], mean, var)
+    set_parameters_bn(flow_step_affine.s_cond.net_class.seq[4], mean, var)
 
     logs = tf_parameters.pop(f"{base_name}/l_last/logs")
-    set_param_weigth(flow_step_affine.s_cond.seq[8].logs, logs)
+    set_param_weigth(flow_step_affine.s_cond.net_class.seq[8].logs, logs)
 
 
 def converate_w(noise_flow, tf_parameters, shift=0):

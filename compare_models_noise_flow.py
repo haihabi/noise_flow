@@ -52,12 +52,16 @@ def main():
     # Solution: Contracting the sampling distribution by using sampling temperature less than 1.0 (e.g., 0.6).
     # Reference: Parmar, Niki, et al. "Image Transformer." ICML. 2018.
     noise_flow = NoiseFlowWrapper(nf_model_path, sampling_temperature=0.6)
+    edge_bias = noise_flow.hps.edge_bias
+    nl = noise_flow.hps.non_linear
     if noisey_image_flow:
         file_name = "noisy_image_flow"
-        noise_flow_pytorch = generate_noisy_image_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]])
+        noise_flow_pytorch = generate_noisy_image_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]],
+                                                       edge_bias=edge_bias, activation_function=nl)
     else:
         file_name = "noise_flow"
-        noise_flow_pytorch = generate_noise_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]])
+        noise_flow_pytorch = generate_noise_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]],
+                                                 edge_bias=edge_bias, activation_function=nl)
     if load_model:
         noise_flow_pytorch.load_state_dict(
             torch.load(f"/Users/haihabi/projects/noise_flow/models/PyTorch/{file_name}.pt",
@@ -73,11 +77,11 @@ def main():
     for _ in range(1):
         # load images
         noisy = loader.load_raw_image_packed(
-            "/Users/haihabi/projects/noise_flow/data/0001_001_S6_00100_00060_3200_L_X/0001_NOISY_RAW_010.MAT")
+            "/Users/haihabi/projects/noise_flow/data/0001_001_S6_00100_00060_3200_L/0001_NOISY_RAW_010.MAT")
         clean = loader.load_raw_image_packed(
-            "/Users/haihabi/projects/noise_flow/data/0001_001_S6_00100_00060_3200_L_X/0001_GT_RAW_010.MAT")
+            "/Users/haihabi/projects/noise_flow/data/0001_001_S6_00100_00060_3200_L/0001_GT_RAW_010.MAT")
         metadata, bayer_2by2, wb, cst2, iso, cam = read_metadata(
-            "/Users/haihabi/projects/noise_flow/data/0001_001_S6_00100_00060_3200_L_X/0001_METADATA_RAW_010.MAT")
+            "/Users/haihabi/projects/noise_flow/data/0001_001_S6_00100_00060_3200_L/0001_METADATA_RAW_010.MAT")
         iso = 100
         if iso not in [100, 400, 800, 1600, 3200]:
             continue
@@ -104,15 +108,16 @@ def main():
             z_pytorch = torch.tensor(np.transpose(z, (0, 3, 1, 2)))
             noise_flow_pytorch.train()
             noise_patch_pytorch, logdet_pytorch = noise_flow_pytorch.backward(z_pytorch.reshape([1, -1]),
-                                                                              cond=[clean_image_patch_pytorch, iso,
-                                                                                    cam])
+                                                                              cond=[clean_image_patch_pytorch,
+                                                                                    torch.tensor(iso),
+                                                                                    torch.tensor(cam)])
             if noisey_image_flow:
                 _ = compare_tensors(noise_patch_pytorch[-1] - clean_image_patch_pytorch, noise_patch_syn)
             else:
                 _ = compare_tensors(noise_patch_pytorch[-1], noise_patch_syn)
             if save_model:
                 torch.save(noise_flow_pytorch.state_dict(),
-                           os.path.join("/Users/haihabi/projects/noise_flow/models/PyTorch", f"{file_name}.pt"))
+                           os.path.join("/Users/haihabi/projects/noise_flow/models/PyTorch", f"{file_name}_{nl}.pt"))
 
 
 if __name__ == '__main__':
