@@ -379,6 +379,7 @@ def main(hps):
         train_op = get_optimizer(hps, lr, loss_val)
         logging.trace('initializing variables')
         sess.run(tf.global_variables_initializer())
+        saver.restore(sess, "/data/projects/noise_flow/models/NoiseFlow/ckpt/model.ckpt.best")
 
     _lr = hps.lr
     _nlf0 = None
