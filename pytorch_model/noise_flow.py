@@ -31,7 +31,7 @@ def get_activation_function(act_func):
 def generate_noise_flow(input_shape, device="cpu", edge_bias=True, activation_function="relu"):
     dim = int(np.prod(input_shape))
     n_channels = input_shape[0]
-    activation_function=get_activation_function(activation_function)
+    activation_function = get_activation_function(activation_function)
     prior = MultivariateNormal(torch.zeros(dim, device=device),
                                torch.eye(dim, device=device))
     flows = [SignalDependentLayer()]
@@ -72,8 +72,9 @@ def generate_noisy_image_flow(input_shape, device="cpu", load_model=False, edge_
     flows.append(nfp.flows.Tensor2Vector(input_shape))
     flow = nfp.NormalizingFlowModel(prior, flows)
     if load_model:
+        activation_name = "" if activation_function == "relu" else "silu"
         state_dict = torch.load(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "PyTorch", "noisy_image_flow.pt"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "PyTorch", f"noisy_image_flow_{activation_name}.pt"),
             map_location=torch.device('cpu'))
         flow.load_state_dict(state_dict, strict=True)
     return flow

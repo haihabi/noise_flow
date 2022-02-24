@@ -21,7 +21,7 @@ from pytorch_model.converate_parameters import converate_w
 
 data_dir = 'data'
 sidd_path = os.path.join(data_dir, 'SIDD_Medium_Raw/Data')
-nf_model_path = 'models/NoiseFlow'
+nf_model_path = 'models/NoiseFlowSiLU'
 
 samples_dir = os.path.join(data_dir, 'samples')
 os.makedirs(samples_dir, exist_ok=True)
@@ -46,15 +46,16 @@ def main():
     patch_size = 32
     save_model = True
     load_model = False
-    noisey_image_flow = True
+    noisey_image_flow = False
     # Prepare NoiseFlow
     # Issue: Low-probability sampling leading to synthesized pixels with too-high noise variance.
     # Solution: Contracting the sampling distribution by using sampling temperature less than 1.0 (e.g., 0.6).
     # Reference: Parmar, Niki, et al. "Image Transformer." ICML. 2018.
     noise_flow = NoiseFlowWrapper(nf_model_path, sampling_temperature=0.6)
-    edge_bias = noise_flow.hps.edge_bias
+    edge_bias = True
     # edge_bias = True
     nl = noise_flow.hps.non_linear
+    # nl="silu"
     if noisey_image_flow:
         file_name = "noisy_image_flow"
         noise_flow_pytorch = generate_noisy_image_flow([noise_flow.x_shape[-1], *noise_flow.x_shape[1:3]],
@@ -113,7 +114,8 @@ def main():
                                                                                     torch.tensor(iso),
                                                                                     torch.tensor(cam)])
             if noisey_image_flow:
-                _ = compare_tensors(noise_patch_pytorch[-1] - clean_image_patch_pytorch, noise_patch_syn)
+                noise = noise_patch_pytorch[-1] - clean_image_patch_pytorch
+                _ = compare_tensors(noise, noise_patch_syn)
             else:
                 _ = compare_tensors(noise_patch_pytorch[-1], noise_patch_syn)
             if save_model:
