@@ -7,8 +7,7 @@ This repo includes the following:
 1. A PyTorch implementation of NoiseFlow
 2. Parameter porting code (From Tensorflow to PyTorch)
 
-The PyTorch Implementation is based on the repository that
-will be released soon :)
+The PyTorch Implementation is based on the repository https://github.com/haihabi/NormFlowPy.
 
 # Original Readme
 
